@@ -6,6 +6,7 @@ package inventory
 
 import (
 	"errors"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -28,6 +29,7 @@ var (
 	ErrInsufficientStock = errors.New("库存不足，无法出库")
 	ErrInvalidThreshold  = errors.New("库存预警阈值必须是正数")
 	ErrDiscontinued      = errors.New("商品已停售，不能再进行该操作")
+	ErrStockOverflow     = errors.New("入库后库存将溢出，无法入库")
 )
 
 // Product 表示一个商品。Status 与 LowStock 由库存与阈值派生，不作为持久字段。
@@ -142,6 +144,11 @@ func (s *Store) StockIn(sku string, in AmountInput, now time.Time) (*Product, er
 	}
 	if p.DiscontinuedAt != nil {
 		return nil, ErrDiscontinued
+	}
+	// 在加法前检测溢出：当前库存加上入库数量将超过 int64 上限，
+	// 直接相加会回绕为负数，违反“库存始终为非负整数”的核心不变量。
+	if in.Amount > math.MaxInt64-p.Stock {
+		return nil, ErrStockOverflow
 	}
 	p.Stock += in.Amount
 	p.LastInAt = &now

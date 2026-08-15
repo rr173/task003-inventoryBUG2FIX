@@ -74,7 +74,8 @@ func writeError(w http.ResponseWriter, err error) {
 		status = http.StatusNotFound
 	case errors.Is(err, inventory.ErrDuplicateSKU),
 		errors.Is(err, inventory.ErrInsufficientStock),
-		errors.Is(err, inventory.ErrDiscontinued):
+		errors.Is(err, inventory.ErrDiscontinued),
+		errors.Is(err, inventory.ErrStockOverflow):
 		status = http.StatusConflict
 	case errors.Is(err, inventory.ErrEmptySKU),
 		errors.Is(err, inventory.ErrEmptyName),
